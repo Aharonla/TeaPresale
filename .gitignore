@@ -1,14 +1,26 @@
-# Compiler files
-cache/
-out/
+# directories
+cache
+coverage
+node_modules
+out
+docs
+lib/forge-std
+lib/openzeppelin-contracts
+lib/openzeppelin-contracts-upgradeable
+lib/openzeppelin-foundry-upgrades
 
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
+# files
+*.env
+*.log
+.DS_Store
+.pnp.*
+lcov.info
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+latestAddress.txt
 
-# Docs
-docs/
-
-# Dotenv file
-.env
+# broadcasts
+!broadcast
+broadcast/*
+broadcast/*/31337/
