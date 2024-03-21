@@ -97,4 +97,33 @@ contract CounterTest is Test {
         presale.startNextRound();
         assertEq(presale.currentRound(), 1);
     }
+
+    function test_StartNextRound_RevertWhen_PreviousRoundActive() public {
+        uint256 endTime = block.timestamp + 3600;
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        vm.warp(endTime);
+        presale.setRound(2, block.timestamp, 3600, 10**6, 100);
+        vm.expectRevert(abi.encodeWithSelector(Presale.PreviousRoundActive.selector, 1));
+        presale.startNextRound();
+    }
+
+    function test_StartNextRound_RevertWhen_notAdmin() public {
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+        presale.startNextRound();
+    }
+
+    function test_StartNextRound_AfterPreviousRoundEnded() public {
+        uint256 endTime = block.timestamp + 3600;
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        vm.warp(endTime + 1);
+        presale.setRound(2, block.timestamp, 3600, 10**6, 100);
+        vm.expectEmit(true, false, false, false);
+        emit Presale.RoundStarted(2);
+        presale.startNextRound();
+        assertEq(presale.currentRound(), 2);
+    }
+
 }
