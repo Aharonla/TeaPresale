@@ -14,6 +14,8 @@ contract Presale is ERC20, Ownable, Pausable {
     error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
     error PaymentFailed(address from, address to, uint256 amount);
 
+    event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
+
     modifier roundIsActive() {
         if (rounds[currentRound].startTime > block.timestamp) {
             revert RoundNotStarted(currentRound);
@@ -76,6 +78,7 @@ contract Presale is ERC20, Ownable, Pausable {
         uint256 _price
     ) internal {
         rounds[_round] = Round(_startTime, _duration, _size, _price, 0);
+        emit SetRound(_round, _startTime, _duration, _size, _price);
     }
 
     /// @notice Sets round parameters for the presale

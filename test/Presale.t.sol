@@ -12,6 +12,8 @@ contract CounterTest is Test {
     }
 
     function test_SetRound() public {
+        vm.expectEmit(true, true, true, true);
+        emit Presale.SetRound(1, block.timestamp, 3600, 10**6, 100);
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         (
             uint256 startTime, 
