@@ -29,4 +29,17 @@ contract CounterTest is Test {
         assertEq(sold, 0);
         assertEq(presale.currentRound(), 0);
     }
+
+    function test_SetRound_RevertWhen_RoundAlreadyExists() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        vm.expectRevert(abi.encodeWithSelector(Presale.RoundAlreadyExists.selector, 1));
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+    }
+
+    function test_SetRound_RevertWhen_notAdmin() public {
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+    }
+
 }
