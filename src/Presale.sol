@@ -71,6 +71,14 @@ contract Presale is ERC20, Ownable, Pausable {
         return rounds[currentRound].sold;
     }
 
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
 
     function _setRound(
         uint8 _round, 
