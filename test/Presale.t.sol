@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {Presale} from "../src/Presale.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CounterTest is Test {
 
