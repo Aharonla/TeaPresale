@@ -15,6 +15,7 @@ contract Presale is ERC20, Ownable, Pausable {
     error PaymentFailed(address from, address to, uint256 amount);
 
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
+    event RoundStarted(uint8 indexed round);
 
     modifier roundIsActive() {
         if (rounds[currentRound].startTime > block.timestamp) {
@@ -113,6 +114,7 @@ contract Presale is ERC20, Ownable, Pausable {
             revert PreviousRoundActive(currentRound);
         } else {
             currentRound++;
+            emit RoundStarted(currentRound);
         }
     }
 
