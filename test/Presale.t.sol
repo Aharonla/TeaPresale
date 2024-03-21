@@ -75,4 +75,18 @@ contract CounterTest is Test {
         assertEq(presale.currentRound(), 0);
     }
 
+    function test_ForceSetRound_RevertWhen_RoundAlreadyStarted() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        paymentToken.approve(address(presale), 10**8);
+        presale.buyTokens(10**6, 0);
+        vm.expectRevert(abi.encodeWithSelector(Presale.RoundAlreadyStarted.selector, 1));
+        presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
+    }
+
+    function test_ForceSetRound_RevertWhen_notAdmin() public {
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+        presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
+    }
 }
