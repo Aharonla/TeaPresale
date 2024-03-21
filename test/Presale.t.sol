@@ -89,4 +89,12 @@ contract CounterTest is Test {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
         presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
     }
+
+    function test_StartNextRound() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        vm.expectEmit(true, false, false, false);
+        emit Presale.RoundStarted(1);
+        presale.startNextRound();
+        assertEq(presale.currentRound(), 1);
+    }
 }
