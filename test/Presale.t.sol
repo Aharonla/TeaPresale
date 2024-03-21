@@ -11,7 +11,7 @@ contract CounterTest is Test {
         presale = new Presale(address(this));
     }
 
-    function testSetRound() public {
+    function test_SetRound() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         (
             uint256 startTime, 
