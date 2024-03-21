@@ -35,7 +35,7 @@ contract Presale is ERC20, Ownable, Pausable {
         uint256 sold;
     }
 
-    struct referral {
+    struct Referral {
         uint256 amountSold;
         uint256 numOfReferrals;
     }
@@ -47,7 +47,7 @@ contract Presale is ERC20, Ownable, Pausable {
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
 
-    mapping(uint8 => referral) public referrals;
+    mapping(uint8 => Referral) public referrals;
 
 
     constructor(address _paymentToken) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
