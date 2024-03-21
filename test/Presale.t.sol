@@ -4,12 +4,22 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 import {Presale} from "../src/Presale.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+
+contract Token is ERC20 {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+        _mint(msg.sender, 10**18);
+    }
+}
 
 contract CounterTest is Test {
 
     Presale public presale;
-    function setUp() public {
-        presale = new Presale(address(this));
+    Token public paymentToken;
+    function setUp() public virtual {
+        paymentToken = new Token("TestToken", "TT");
+        presale = new Presale(address(paymentToken));
     }
 
     function test_SetRound() public {
