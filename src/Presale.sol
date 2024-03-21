@@ -16,6 +16,7 @@ contract Presale is ERC20, Ownable, Pausable {
 
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
     event RoundStarted(uint8 indexed round);
+    event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
 
     modifier roundIsActive() {
         if (rounds[currentRound].startTime > block.timestamp) {
@@ -137,6 +138,7 @@ contract Presale is ERC20, Ownable, Pausable {
         if(!success) {
             revert PaymentFailed(_msgSender(), address(this), paymentAmount);
         }
+        emit BuyTokens(_msgSender(), _amount, _referral);
     }
 
     function withdraw() public onlyOwner {
