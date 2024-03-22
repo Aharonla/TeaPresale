@@ -15,6 +15,8 @@ contract Token is ERC20 {
 
 contract CounterTest is Test {
 
+    error EnforcedPause();
+
     Presale public presale;
     Token public paymentToken;
     function setUp() public virtual {
@@ -126,4 +128,60 @@ contract CounterTest is Test {
         assertEq(presale.currentRound(), 2);
     }
 
+    function test_BuyTokens() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        paymentToken.approve(address(presale), 10**8);
+        uint256 ptBalanceBefore = paymentToken.balanceOf(address(this));
+        uint256 ptBalancePresaleBefore = paymentToken.balanceOf(address(presale));
+        uint256 balanceBefore = presale.balanceOf(address(this));
+        assertEq(balanceBefore, 0);
+        vm.expectEmit(true, true, true, true);
+        emit Presale.BuyTokens(address(this), 10**6, 0);
+        presale.buyTokens(10**6, 0);
+        (, , , , uint256 sold) = presale.rounds(1);
+        assertEq(sold, 10**6);
+        uint256 balanceAfter = presale.balanceOf(address(this));
+        assertEq(balanceAfter, 10**6);
+        uint256 ptBalanceAfter = paymentToken.balanceOf(address(this));
+        assertEq(ptBalanceBefore - ptBalanceAfter, 10**8);
+        uint256 ptBalancePresaleAfter = paymentToken.balanceOf(address(presale));
+        assertEq(ptBalancePresaleAfter - ptBalancePresaleBefore, 10**8);
+    }
+
+    function test_BuyTokens_RevertWhen_NotEnoughTokensLeft() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        paymentToken.approve(address(presale), 10**8);
+        presale.buyTokens(10**6, 0);
+        vm.expectRevert(abi.encodeWithSelector(Presale.NotEnoughTokensLeft.selector, 1, 1, 0));
+        presale.buyTokens(1, 0);
+    }
+
+    function test_BuyTokens_RevertWhen_Paused() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        presale.pause();
+        paymentToken.approve(address(presale), 10**8);
+        vm.expectRevert(abi.encodeWithSelector(EnforcedPause.selector));
+        presale.buyTokens(10**6, 0);
+    }
+
+    function test_BuyTokens_RevertWhen_RoundNotStarted() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        paymentToken.approve(address(presale), 10**8);
+        vm.warp(block.timestamp - 10);
+        vm.expectRevert(abi.encodeWithSelector(Presale.RoundNotStarted.selector, 1));
+        presale.buyTokens(10**6, 0);
+    }
+
+    function test_BuyTokens_RevertWhen_RoundFinished() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        paymentToken.approve(address(presale), 10**8);
+        vm.warp(block.timestamp + 3601);
+        vm.expectRevert(abi.encodeWithSelector(Presale.RoundFinished.selector, 1));
+        presale.buyTokens(10**6, 0);
+    }
 }
