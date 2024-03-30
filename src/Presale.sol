@@ -82,7 +82,15 @@ contract Presale is ERC20, Ownable, Pausable {
         _unpause();
     }
 
+    function addPaymentToken(address _token) public onlyOwner {
+        paymentTokens[ERC20(_token)] = true;
+        emit AddPaymentToken(_token);
+    }
 
+    function removePaymentToken(address _token) public onlyOwner {
+        paymentTokens[ERC20(_token)] = false;
+        emit RemovePaymentToken(_token);
+    }
     function _setRound(
         uint8 _round, 
         uint256 _startTime, 
