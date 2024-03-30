@@ -13,10 +13,12 @@ contract Presale is ERC20, Ownable, Pausable {
     error RoundFinished(uint8 round);
     error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
     error PaymentFailed(address from, address to, uint256 amount);
+    error PaymentTokenNotAuthorized(address token);
 
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
     event RoundStarted(uint8 indexed round);
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
+    event AddPaymentToken(address indexed token);
 
     modifier roundIsActive() {
         if (rounds[currentRound].startTime > block.timestamp) {
@@ -43,16 +45,14 @@ contract Presale is ERC20, Ownable, Pausable {
 
     uint8 public currentRound;
     uint256 public totalSold;
-    ERC20 public paymentToken;
 
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
 
-    mapping(uint8 => Referral) public referrals;
-
-
-    constructor(address _paymentToken) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
-        paymentToken = ERC20(_paymentToken);
+    constructor(address[] memory _paymentTokens) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
+        for(uint256 i = 0; i < _paymentTokens.length; i++) {
+            paymentTokens[ERC20(_paymentTokens[i])] = true;
+            emit AddPaymentToken(_paymentTokens[i]);
     }
 
     function getRoundEnd() public view returns (uint256) {
@@ -127,7 +127,7 @@ contract Presale is ERC20, Ownable, Pausable {
         }
     }
 
-    function buyTokens(uint256 _amount, uint8 _referral) 
+    function buyTokens(uint256 _amount, uint8 _referral, address _paymentToken) 
     public 
     payable 
     whenNotPaused 
@@ -135,6 +135,12 @@ contract Presale is ERC20, Ownable, Pausable {
     {
         if (rounds[currentRound].sold + _amount > rounds[currentRound].size) {
             revert NotEnoughTokensLeft(currentRound, _amount, rounds[currentRound].size - rounds[currentRound].sold);
+        }
+        ERC20 paymentToken;
+        if(_paymentToken == address(0)) {
+            revert PaymentTokenNotAuthorized(_paymentToken);
+        } else {
+            paymentToken = ERC20(_paymentToken);
         }
         uint256 paymentAmount = _amount * rounds[currentRound].price;
         rounds[currentRound].sold += _amount;
@@ -149,8 +155,8 @@ contract Presale is ERC20, Ownable, Pausable {
         emit BuyTokens(_msgSender(), _amount, _referral);
     }
 
-    function withdraw() public onlyOwner {
-        paymentToken.transfer(_msgSender(), paymentToken.balanceOf(address(this)));
+    function withdraw(address paymentToken) public onlyOwner {
+        ERC20(paymentToken).transfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
     }
 
 }
