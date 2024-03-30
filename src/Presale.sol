@@ -49,10 +49,13 @@ contract Presale is ERC20, Ownable, Pausable {
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
 
+    mapping(ERC20 token => bool allowed) public paymentTokens;
+
     constructor(address[] memory _paymentTokens) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
         for(uint256 i = 0; i < _paymentTokens.length; i++) {
             paymentTokens[ERC20(_paymentTokens[i])] = true;
             emit AddPaymentToken(_paymentTokens[i]);
+        }
     }
 
     function getRoundEnd() public view returns (uint256) {
