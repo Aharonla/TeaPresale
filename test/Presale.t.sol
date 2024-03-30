@@ -190,5 +190,25 @@ contract CounterTest is Test {
         presale.buyTokens(10**6, 0, address(usdt));
     }
 
+    function test_Withdraw() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        usdt.approve(address(presale), 10**8);
+        presale.buyTokens(10**6, 0, address(usdt));
+        uint256 ptBalanceBefore = usdt.balanceOf(address(this));
+        uint256 ptBalancePresaleBefore = usdt.balanceOf(address(presale));
+        vm.expectEmit(true, false, false, false);
+        emit Presale.Withdraw(address(this), 10**8);
+        presale.withdraw(address(usdt));
+        uint256 ptBalanceAfter = usdt.balanceOf(address(this));
+        assertEq(ptBalanceAfter - ptBalanceBefore, 10**8);
+        uint256 ptBalancePresaleAfter = usdt.balanceOf(address(presale));
+        assertEq(ptBalancePresaleBefore - ptBalancePresaleAfter, 10**8);
+    }
+
+    function test_Withdraw_RevertWhen_notAdmin() public {
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+        presale.withdraw(address(usdt));
     }
 }
