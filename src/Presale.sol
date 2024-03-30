@@ -18,6 +18,7 @@ contract Presale is ERC20, Ownable, Pausable {
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
     event RoundStarted(uint8 indexed round);
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
+    event Withdraw(address indexed owner, uint256 amount);
     event AddPaymentToken(address indexed token);
     event RemovePaymentToken(address indexed token);
 
@@ -170,6 +171,7 @@ contract Presale is ERC20, Ownable, Pausable {
     }
 
     function withdraw(address paymentToken) public onlyOwner {
+        emit Withdraw(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
         ERC20(paymentToken).transfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
     }
 
