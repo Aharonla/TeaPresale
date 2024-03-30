@@ -33,8 +33,8 @@
     "test:coverage": "forge coverage",
     "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
     "installdeps": "chmod +x dependencies.sh && ./dependencies.sh",
-    "deploy": "forge script script/Deploy.s.sol:Deploy --rpc-url ${MUMBAI_RPC_URL} --broadcast",
-    "deploy:verify": "forge script script/Deploy.s.sol:Deploy --rpc-url ${MUMBAI_RPC_URL} --broadcast --verify",
-    "address": "grep contractAddress ./broadcast/Deploy.s.sol/80001/run-latest.json -m 2 > latestAddress.txt"
+    "deploy": "forge script script/TestnetPresale.s.sol:PresaleScript --rpc-url ${TESTNET_ALCHEMY_URL} --broadcast",
+    "deploy:verify": "forge script script/TestnetPresale.s.sol:PresaleScript --rpc-url ${TESTNET_ALCHEMY_URL} --broadcast --verify",
+    "address": "grep contractAddress ./broadcast/TestnetPresale.s.sol/80001/run-latest.json -m 2 > latestAddress.txt"
   }
 }
