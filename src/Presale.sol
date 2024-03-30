@@ -19,6 +19,7 @@ contract Presale is ERC20, Ownable, Pausable {
     event RoundStarted(uint8 indexed round);
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
     event AddPaymentToken(address indexed token);
+    event RemovePaymentToken(address indexed token);
 
     modifier roundIsActive() {
         if (rounds[currentRound].startTime > block.timestamp) {
@@ -48,6 +49,8 @@ contract Presale is ERC20, Ownable, Pausable {
 
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
+
+    mapping(uint8 referralId  => Referral referral) public referrals;
 
     mapping(ERC20 token => bool allowed) public paymentTokens;
 
