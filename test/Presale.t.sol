@@ -18,10 +18,15 @@ contract CounterTest is Test {
     error EnforcedPause();
 
     Presale public presale;
-    Token public paymentToken;
+    Token public usdt;
+    Token public usdc;
     function setUp() public virtual {
-        paymentToken = new Token("TestToken", "TT");
-        presale = new Presale(address(paymentToken));
+        address[] memory tokens = new address[](2);
+        usdt = new Token("USDT", "USDT");
+        usdc = new Token("USDC", "USDC");
+        tokens[0] = address(usdt);
+        tokens[1] = address(usdc);
+        presale = new Presale(tokens);
     }
 
     function test_SetRound() public {
@@ -80,8 +85,8 @@ contract CounterTest is Test {
     function test_ForceSetRound_RevertWhen_RoundAlreadyStarted() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        paymentToken.approve(address(presale), 10**8);
-        presale.buyTokens(10**6, 0);
+        usdt.approve(address(presale), 10**8);
+        presale.buyTokens(10**6, 0, address(usdt));
         vm.expectRevert(abi.encodeWithSelector(Presale.RoundAlreadyStarted.selector, 1));
         presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
     }
@@ -131,57 +136,59 @@ contract CounterTest is Test {
     function test_BuyTokens() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        paymentToken.approve(address(presale), 10**8);
-        uint256 ptBalanceBefore = paymentToken.balanceOf(address(this));
-        uint256 ptBalancePresaleBefore = paymentToken.balanceOf(address(presale));
+        usdt.approve(address(presale), 10**8);
+        uint256 ptBalanceBefore = usdt.balanceOf(address(this));
+        uint256 ptBalancePresaleBefore = usdt.balanceOf(address(presale));
         uint256 balanceBefore = presale.balanceOf(address(this));
         assertEq(balanceBefore, 0);
         vm.expectEmit(true, true, true, true);
         emit Presale.BuyTokens(address(this), 10**6, 0);
-        presale.buyTokens(10**6, 0);
+        presale.buyTokens(10**6, 0, address(usdt));
         (, , , , uint256 sold) = presale.rounds(1);
         assertEq(sold, 10**6);
         uint256 balanceAfter = presale.balanceOf(address(this));
         assertEq(balanceAfter, 10**6);
-        uint256 ptBalanceAfter = paymentToken.balanceOf(address(this));
+        uint256 ptBalanceAfter = usdt.balanceOf(address(this));
         assertEq(ptBalanceBefore - ptBalanceAfter, 10**8);
-        uint256 ptBalancePresaleAfter = paymentToken.balanceOf(address(presale));
+        uint256 ptBalancePresaleAfter = usdt.balanceOf(address(presale));
         assertEq(ptBalancePresaleAfter - ptBalancePresaleBefore, 10**8);
     }
 
     function test_BuyTokens_RevertWhen_NotEnoughTokensLeft() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        paymentToken.approve(address(presale), 10**8);
-        presale.buyTokens(10**6, 0);
+        usdt.approve(address(presale), 10**8);
+        presale.buyTokens(10**6, 0, address(usdt));
         vm.expectRevert(abi.encodeWithSelector(Presale.NotEnoughTokensLeft.selector, 1, 1, 0));
-        presale.buyTokens(1, 0);
+        presale.buyTokens(1, 0, address(usdt));
     }
 
     function test_BuyTokens_RevertWhen_Paused() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
         presale.pause();
-        paymentToken.approve(address(presale), 10**8);
+        usdt.approve(address(presale), 10**8);
         vm.expectRevert(abi.encodeWithSelector(EnforcedPause.selector));
-        presale.buyTokens(10**6, 0);
+        presale.buyTokens(10**6, 0, address(usdt));
     }
 
     function test_BuyTokens_RevertWhen_RoundNotStarted() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        paymentToken.approve(address(presale), 10**8);
+        usdt.approve(address(presale), 10**8);
         vm.warp(block.timestamp - 10);
         vm.expectRevert(abi.encodeWithSelector(Presale.RoundNotStarted.selector, 1));
-        presale.buyTokens(10**6, 0);
+        presale.buyTokens(10**6, 0, address(usdt));
     }
 
     function test_BuyTokens_RevertWhen_RoundFinished() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        paymentToken.approve(address(presale), 10**8);
+        usdt.approve(address(presale), 10**8);
         vm.warp(block.timestamp + 3601);
         vm.expectRevert(abi.encodeWithSelector(Presale.RoundFinished.selector, 1));
-        presale.buyTokens(10**6, 0);
+        presale.buyTokens(10**6, 0, address(usdt));
+    }
+
     }
 }
