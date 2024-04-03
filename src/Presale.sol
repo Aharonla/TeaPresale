@@ -1,35 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.18;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Presale is ERC20, Ownable, Pausable {
-    error RoundAlreadyExists(uint8 round);
-    error RoundAlreadyStarted(uint8 round);
-    error PreviousRoundActive(uint8 round);
-    error RoundNotStarted(uint8 round);
-    error RoundFinished(uint8 round);
-    error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
-    error PaymentFailed(address from, address to, uint256 amount);
-    error PaymentTokenNotAuthorized(address token);
-
-    event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
-    event RoundStarted(uint8 indexed round);
-    event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
-    event Withdraw(address indexed owner, uint256 amount);
-    event AddPaymentToken(address indexed token);
-    event RemovePaymentToken(address indexed token);
-
-    modifier roundIsActive() {
-        if (rounds[currentRound].startTime > block.timestamp) {
-            revert RoundNotStarted(currentRound);
-        }
-        if (rounds[currentRound].startTime + rounds[currentRound].duration < block.timestamp) {
-            revert RoundFinished(currentRound);
-        }
-        _;}
 
     /// @notice Round parameters
     /// @param startTime Start time of the round
@@ -53,17 +29,57 @@ contract Presale is ERC20, Ownable, Pausable {
         uint256 numOfReferrals;
     }
 
+    /// @notice Percentage rate: 100% = 10000 for 2 decimal places
+    uint256 public constant PERCENTAGE_RATE = 10000;
     uint8 public currentRound;
     uint256 public totalSold;
+    uint256 public totalClaimed;
+    address public claimer;
 
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
-
     /// @notice Mapping of referral code to referral parameters
     mapping(uint8 referralId  => Referral referral) public referrals;
-
     /// @notice Mapping of payment tokens to their status
     mapping(ERC20 token => bool allowed) public paymentTokens;
+
+    event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
+    event RoundStarted(uint8 indexed round);
+    event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
+    event Withdraw(address indexed owner, uint256 amount);
+    event AddPaymentToken(address indexed token);
+    event RemovePaymentToken(address indexed token);
+    event ClaimerSet(address indexed claimer);
+
+    error RoundAlreadyExists(uint8 round);
+    error RoundAlreadyStarted(uint8 round);
+    error PreviousRoundActive(uint8 round);
+    error RoundNotStarted(uint8 round);
+    error RoundFinished(uint8 round);
+    error RoundNotSet(uint8 round);
+    error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
+    error PaymentFailed(address from, address to, uint256 amount);
+    error PaymentTokenNotAuthorized(address token);
+    error NotClaimer();
+    error claimerAddressIsZero();
+    error WithdrawFailed();
+    
+    modifier roundIsActive() {
+        if (rounds[currentRound].startTime > block.timestamp) {
+            revert RoundNotStarted(currentRound);
+        }
+        if (rounds[currentRound].startTime + rounds[currentRound].duration < block.timestamp) {
+            revert RoundFinished(currentRound);
+        }
+        _;}
+
+    modifier onlyClaimer() {
+        if(_msgSender() != claimer) {
+            revert NotClaimer();
+        } 
+        _;
+    }
+
 
     /// @notice Constructor
     /// @param _paymentTokens List of payment tokens
@@ -104,123 +120,142 @@ contract Presale is ERC20, Ownable, Pausable {
         _unpause();
     }
 
+    /// @notice Sets the address of the claimer
+    /// @param claimerAddress Address of the claimer
+    function setClaimer(address claimerAddress) public onlyOwner {
+        if(claimerAddress == address(0)) {
+            revert claimerAddressIsZero();
+        }
+        claimer = claimerAddress;
+        emit ClaimerSet(claimerAddress);
+    }
+
     /// @notice Adds a token to the list of payment tokens
-    /// @param _token Address of the token to add
-    function addPaymentToken(address _token) public onlyOwner {
-        paymentTokens[ERC20(_token)] = true;
-        emit AddPaymentToken(_token);
+    /// @param token Address of the token to add
+    function addPaymentToken(address token) public onlyOwner {
+        paymentTokens[ERC20(token)] = true;
+        emit AddPaymentToken(token);
     }
 
     /// @notice Removes a token from the list of payment tokens
-    /// @param _token Address of the token to remove
-    function removePaymentToken(address _token) public onlyOwner {
-        paymentTokens[ERC20(_token)] = false;
-        emit RemovePaymentToken(_token);
+    /// @param token Address of the token to remove
+    function removePaymentToken(address token) public onlyOwner {
+        paymentTokens[ERC20(token)] = false;
+        emit RemovePaymentToken(token);
     }
 
     /// @notice Sets round parameters for the presale
     /// @dev Used internally by setRound and forceSetRound
-    /// @param _round Round index
-    /// @param _startTime Start time of the round
-    /// @param _duration Duration of the round
-    /// @param _size Amount of tokens sold in the round
-    /// @param _price Price of a token in the round
+    /// @param round Round index
+    /// @param startTime Start time of the round
+    /// @param duration Duration of the round
+    /// @param size Amount of tokens sold in the round
+    /// @param price Price of a token in the round
     function _setRound(
-        uint8 _round, 
-        uint256 _startTime, 
-        uint256 _duration, 
-        uint256 _size,
-        uint256 _price
+        uint8 round, 
+        uint256 startTime, 
+        uint256 duration, 
+        uint256 size,
+        uint256 price
     ) internal {
-        rounds[_round] = Round(_startTime, _duration, _size, _price, 0);
-        emit SetRound(_round, _startTime, _duration, _size, _price);
+        rounds[round] = Round(startTime, duration, size, price, 0);
+        emit SetRound(round, startTime, duration, size, price);
     }
 
     /// @notice Sets round parameters for the presale
-    /// @param _round Round index
-    /// @param _startTime Start time of the round
-    /// @param _duration Duration of the round
-    /// @param _size Amount of tokens sold in the round
-    /// @param _price Price of a token in the round
+    /// @param round Round index
+    /// @param startTime Start time of the round
+    /// @param duration Duration of the round
+    /// @param size Amount of tokens sold in the round
+    /// @param price Price of a token in the round in percentage (1% = 100)
     function setRound(
-        uint8 _round,
-        uint256 _startTime, 
-        uint256 _duration, 
-        uint256 _size, 
-        uint256 _price
+        uint8 round,
+        uint256 startTime, 
+        uint256 duration, 
+        uint256 size, 
+        uint256 price
     ) public onlyOwner {
-        if(rounds[_round].size != 0) {
-            revert RoundAlreadyExists(_round);
+        if(rounds[round].size != 0) {
+            revert RoundAlreadyExists(round);
         }
-        _setRound(_round, _startTime, _duration, _size, _price);
+        _setRound(round, startTime, duration, size, price);
     }
 
     /// @notice Sets round parameters for the presale
     /// @dev Used in case the round has already started
-    /// @param _round Round index
-    /// @param _startTime Start time of the round
-    /// @param _duration Duration of the round
-    /// @param _size Amount of tokens sold in the round
-    /// @param _price Price of a token in the round
+    /// @param round Round index
+    /// @param startTime Start time of the round
+    /// @param duration Duration of the round
+    /// @param size Amount of tokens sold in the round
+    /// @param price Price of a token in the round
     function forceSetRound(
-        uint8 _round,
-        uint256 _startTime, 
-        uint256 _duration, 
-        uint256 _size,
-        uint256 _price
+        uint8 round,
+        uint256 startTime, 
+        uint256 duration, 
+        uint256 size,
+        uint256 price
     ) public onlyOwner {
-        if(rounds[_round].sold != 0) {
-            revert RoundAlreadyStarted(_round);
+        if(rounds[round].sold != 0) {
+            revert RoundAlreadyStarted(round);
         }
-        _setRound(_round, _startTime, _duration, _size, _price);
+        _setRound(round, startTime, duration, size, price);
     }
 
     /// @notice Starts the next round
     function startNextRound() public onlyOwner {
         if(rounds[currentRound].startTime + rounds[currentRound].duration >= block.timestamp) {
             revert PreviousRoundActive(currentRound);
-        } else {
+        }
+        if(rounds[currentRound + 1].size == 0) {
+            revert RoundNotSet(currentRound + 1);
+        }
             currentRound++;
             emit RoundStarted(currentRound);
-        }
     }
 
     /// @notice Used to buy tokens in the current round
-    /// @param _amount Amount of tokens to buy
-    /// @param _referral Referral code
-    /// @param _paymentToken Address of the payment token
-    function buyTokens(uint256 _amount, uint8 _referral, address _paymentToken) 
+    /// @param amount Amount of tokens to buy
+    /// @param referral Referral code
+    /// @param tokenAddress Address of the payment token
+    function buyTokens(uint256 amount, uint8 referral, address tokenAddress) 
     public 
-    payable 
     whenNotPaused 
     roundIsActive 
     {
-        if (rounds[currentRound].sold + _amount > rounds[currentRound].size) {
-            revert NotEnoughTokensLeft(currentRound, _amount, rounds[currentRound].size - rounds[currentRound].sold);
+        if (rounds[currentRound].sold + amount > rounds[currentRound].size) {
+            revert NotEnoughTokensLeft(currentRound, amount, rounds[currentRound].size - rounds[currentRound].sold);
         }
-        ERC20 paymentToken;
-        if(_paymentToken == address(0)) {
-            revert PaymentTokenNotAuthorized(_paymentToken);
-        } else {
-            paymentToken = ERC20(_paymentToken);
+        ERC20 paymentToken = ERC20(tokenAddress);
+        if(!paymentTokens[paymentToken]) {
+            revert PaymentTokenNotAuthorized(tokenAddress);
         }
-        uint256 paymentAmount = _amount * rounds[currentRound].price;
-        rounds[currentRound].sold += _amount;
-        totalSold += _amount;
-        referrals[_referral].amountSold += _amount;
-        referrals[_referral].numOfReferrals++;
-        _mint(_msgSender(), _amount);
-        bool success = paymentToken.transferFrom(_msgSender(),address(this), paymentAmount);
+        uint256 paymentAmount = amount * rounds[currentRound].price / PERCENTAGE_RATE;
+        rounds[currentRound].sold += amount;
+        totalSold += amount;
+        referrals[referral].amountSold += amount;
+        referrals[referral].numOfReferrals++;
+        _mint(_msgSender(), amount);
+        emit BuyTokens(_msgSender(), amount, referral);
+        bool success = paymentToken.transferFrom(msg.sender, address(this), paymentAmount);
         if(!success) {
             revert PaymentFailed(_msgSender(), address(this), paymentAmount);
         }
-        emit BuyTokens(_msgSender(), _amount, _referral);
     }
 
     /// @notice Withdraws the balance of the contract
     /// @param paymentToken Address of the token to withdraw
     function withdraw(address paymentToken) public onlyOwner {
         emit Withdraw(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
-        ERC20(paymentToken).transfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
+        bool success = ERC20(paymentToken).transfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
+        if(!success) {
+            revert WithdrawFailed();
+        }
+    }
+
+    /// @notice Used to burn tokens once the amount is claimed
+    function burnClaimed() public onlyClaimer returns (bool) {
+        _burn(_msgSender(), balanceOf(_msgSender()));
+        totalClaimed += balanceOf(_msgSender());
+        return true;
     }
 }
