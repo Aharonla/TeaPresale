@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.18;
 
 import {Script, console2} from "forge-std/Script.sol";
 import { Presale } from "../src/Presale.sol";
@@ -7,12 +7,12 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Token is ERC20 {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _mint(msg.sender, 10**18);
+        _mint(msg.sender, 300 * 10**6 * 1 ether);
     }
 }
 
 contract PresaleScript is Script {
-    function run() external returns(address) {
+    function run() external returns(address presaleAddress, address usdtAddress, address usdcAddress) {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         Token usdt = new Token("USDT", "USDT");
@@ -24,6 +24,8 @@ contract PresaleScript is Script {
 
         vm.stopBroadcast();
         console2.log(address(presale));
-        return address(presale);
+        console2.log(address(usdt));
+        console2.log(address(usdc));
+        return (address(presale), address(usdt), address(usdc));
     }
 }
