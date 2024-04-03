@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {Presale} from "../src/Presale.sol";
@@ -136,7 +136,7 @@ contract CounterTest is Test {
     function test_BuyTokens() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        usdt.approve(address(presale), 10**8);
+        usdt.approve(address(presale), 10**4);
         uint256 ptBalanceBefore = usdt.balanceOf(address(this));
         uint256 ptBalancePresaleBefore = usdt.balanceOf(address(presale));
         uint256 balanceBefore = presale.balanceOf(address(this));
@@ -149,9 +149,9 @@ contract CounterTest is Test {
         uint256 balanceAfter = presale.balanceOf(address(this));
         assertEq(balanceAfter, 10**6);
         uint256 ptBalanceAfter = usdt.balanceOf(address(this));
-        assertEq(ptBalanceBefore - ptBalanceAfter, 10**8);
+        assertEq(ptBalanceBefore - ptBalanceAfter, 10**4);
         uint256 ptBalancePresaleAfter = usdt.balanceOf(address(presale));
-        assertEq(ptBalancePresaleAfter - ptBalancePresaleBefore, 10**8);
+        assertEq(ptBalancePresaleAfter - ptBalancePresaleBefore, 10**4);
     }
 
     function test_BuyTokens_RevertWhen_NotEnoughTokensLeft() public {
@@ -193,17 +193,17 @@ contract CounterTest is Test {
     function test_Withdraw() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
-        usdt.approve(address(presale), 10**8);
+        usdt.approve(address(presale), 10**4);
         presale.buyTokens(10**6, 0, address(usdt));
         uint256 ptBalanceBefore = usdt.balanceOf(address(this));
         uint256 ptBalancePresaleBefore = usdt.balanceOf(address(presale));
         vm.expectEmit(true, false, false, false);
-        emit Presale.Withdraw(address(this), 10**8);
+        emit Presale.Withdraw(address(this), 10**4);
         presale.withdraw(address(usdt));
         uint256 ptBalanceAfter = usdt.balanceOf(address(this));
-        assertEq(ptBalanceAfter - ptBalanceBefore, 10**8);
+        assertEq(ptBalanceAfter - ptBalanceBefore, 10**4);
         uint256 ptBalancePresaleAfter = usdt.balanceOf(address(presale));
-        assertEq(ptBalancePresaleBefore - ptBalancePresaleAfter, 10**8);
+        assertEq(ptBalancePresaleBefore - ptBalancePresaleAfter, 10**4);
     }
 
     function test_Withdraw_RevertWhen_notAdmin() public {
