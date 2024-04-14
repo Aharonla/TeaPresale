@@ -204,6 +204,15 @@ contract PresaleTest is Test {
         presale.buyTokens(10**6, 0, address(usdt));
     }
 
+    function test_BuyTokens_RevertWhen_PaymentTokenNotAdded() public {
+        Token token = new Token("TKN", "TKN");
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        usdt.approve(address(presale), 10**8);
+        vm.expectRevert(abi.encodeWithSelector(Presale.PaymentTokenNotAuthorized.selector, address(token)));
+        presale.buyTokens(10**6, 0, address(token));
+    }
+
     function test_Withdraw() public {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
         presale.startNextRound();
