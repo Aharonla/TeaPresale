@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {Presale} from "../src/Presale.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 
 contract Token is ERC20 {
