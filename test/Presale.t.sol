@@ -30,6 +30,16 @@ contract PresaleTest is Test {
         presale = new Presale(tokens);
     }
 
+    function test_constructor() public {
+        assertEq(presale.owner(), address(this));
+        assertEq(presale.paused(), false);
+        assertEq(presale.currentRound(), 0);
+        assertEq(presale.PERCENTAGE_RATE(), 10**4);
+        assertEq(presale.paymentTokens(usdt), true);
+        assertEq(presale.paymentTokens(usdc), true);
+    }
+
+
     function test_SetRound() public {
         vm.expectEmit(true, true, true, true);
         emit Presale.SetRound(1, block.timestamp, 3600, 10**6, 100);
