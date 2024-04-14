@@ -14,7 +14,7 @@ contract Token is ERC20 {
     }
 }
 
-contract CounterTest is Test {
+contract PresaleTest is Test {
 
     error EnforcedPause();
 
