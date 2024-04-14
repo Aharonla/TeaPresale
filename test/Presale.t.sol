@@ -65,9 +65,11 @@ contract PresaleTest is Test {
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
     }
 
-    function test_SetRound_RevertWhen_notAdmin() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+
+    function test_SetRound_RevertWhen_notAdmin(address notOwner) public {
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
         presale.setRound(1, block.timestamp, 3600, 10**6, 100);
     }
 
@@ -102,9 +104,10 @@ contract PresaleTest is Test {
         presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
     }
 
-    function test_ForceSetRound_RevertWhen_notAdmin() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+    function test_ForceSetRound_RevertWhen_notAdmin(address notOwner) public {
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
         presale.forceSetRound(1, block.timestamp, 3600, 10**6, 100);
     }
 
@@ -217,9 +220,10 @@ contract PresaleTest is Test {
         assertEq(ptBalancePresaleBefore - ptBalancePresaleAfter, 10**4);
     }
 
-    function test_Withdraw_RevertWhen_notAdmin() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0)));
+    function test_Withdraw_RevertWhen_notAdmin(address notOwner) public {
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
         presale.withdraw(address(usdt));
     }
 }
