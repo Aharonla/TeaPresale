@@ -33,8 +33,6 @@ contract Presale is ERC20, Ownable, Pausable {
     uint256 public constant PERCENTAGE_RATE = 10000;
     uint8 public currentRound;
     uint256 public totalSold;
-    uint256 public totalClaimed;
-    address public claimer;
 
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
@@ -49,7 +47,6 @@ contract Presale is ERC20, Ownable, Pausable {
     event Withdraw(address indexed owner, uint256 amount);
     event AddPaymentToken(address indexed token);
     event RemovePaymentToken(address indexed token);
-    event ClaimerSet(address indexed claimer);
 
     error RoundAlreadyExists(uint8 round);
     error RoundAlreadyStarted(uint8 round);
@@ -60,8 +57,6 @@ contract Presale is ERC20, Ownable, Pausable {
     error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
     error PaymentFailed(address from, address to, uint256 amount);
     error PaymentTokenNotAuthorized(address token);
-    error NotClaimer();
-    error claimerAddressIsZero();
     error WithdrawFailed();
     
     modifier roundIsActive() {
@@ -72,14 +67,6 @@ contract Presale is ERC20, Ownable, Pausable {
             revert RoundFinished(currentRound);
         }
         _;}
-
-    modifier onlyClaimer() {
-        if(_msgSender() != claimer) {
-            revert NotClaimer();
-        } 
-        _;
-    }
-
 
     /// @notice Constructor
     /// @param _paymentTokens List of payment tokens
@@ -121,16 +108,6 @@ contract Presale is ERC20, Ownable, Pausable {
     /// @notice Unpauses the contract
     function unpause() public onlyOwner {
         _unpause();
-    }
-
-    /// @notice Sets the address of the claimer
-    /// @param claimerAddress Address of the claimer
-    function setClaimer(address claimerAddress) public onlyOwner {
-        if(claimerAddress == address(0)) {
-            revert claimerAddressIsZero();
-        }
-        claimer = claimerAddress;
-        emit ClaimerSet(claimerAddress);
     }
 
     /// @notice Adds a token to the list of payment tokens
@@ -253,12 +230,5 @@ contract Presale is ERC20, Ownable, Pausable {
         if(!success) {
             revert WithdrawFailed();
         }
-    }
-
-    /// @notice Used to burn tokens once the amount is claimed
-    function burnClaimed() public onlyClaimer returns (bool) {
-        _burn(_msgSender(), balanceOf(_msgSender()));
-        totalClaimed += balanceOf(_msgSender());
-        return true;
     }
 }
