@@ -39,6 +39,98 @@ contract PresaleTest is Test {
         assertEq(presale.paymentTokens(usdc), true);
     }
 
+    function test_GetRoundEnd() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        assertEq(presale.getRoundEnd(), block.timestamp + 3600);
+    }
+
+    function test_GetPrice() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        assertEq(presale.getPrice(), 100);
+    }
+
+    function test_GetRoundSize() public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        presale.startNextRound();
+        assertEq(presale.getRoundSize(), 10**6);
+    }
+
+    function test_GetRoundSold(uint256 amountBought) public {
+        presale.setRound(1, block.timestamp, 3600, 10**6, 100);
+        uint256 PERCENTAGE_RATE = presale.PERCENTAGE_RATE();
+        vm.assume(amountBought <= 10**6);
+        presale.startNextRound();
+        uint256 price = presale.getPrice();
+        usdt.approve(address(presale), amountBought * price / PERCENTAGE_RATE);
+        presale.buyTokens(amountBought, 0, address(usdt));
+        assertEq(presale.getRoundSold(), amountBought);
+    }
+
+    function test_Pause() public {
+        vm.expectEmit(true, true, true, true);
+        emit Pausable.Paused(address(this));
+        presale.pause();
+        assertEq(presale.paused(), true);
+    }
+
+    function test_Pause_RevertWhen_notAdmin(address notOwner) public {
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
+        presale.pause();
+    }
+
+    function test_Unpause() public {
+        presale.pause();
+        vm.expectEmit(true, true, true, true);
+        emit Pausable.Unpaused(address(this));
+        presale.unpause();
+        assertEq(presale.paused(), false);
+    }
+
+    function test_Unpause_RevertWhen_notAdmin(address notOwner) public {
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
+        presale.unpause();
+    }
+
+    function test_AddPaymentToken() public {
+        Token token = new Token("TKN", "TKN");
+        vm.expectEmit(true, true, true, true);
+        emit Presale.AddPaymentToken(address(token));
+        presale.addPaymentToken(address(token));
+        assertEq(presale.paymentTokens(token), true);
+        }
+
+    function test_AddPaymentToken_RevertWhen_notAdmin(address notOwner) public {
+        Token token = new Token("TKN", "TKN");
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
+        presale.addPaymentToken(address(token));
+    }
+
+    function test_RemovePaymentToken() public {
+        Token token = new Token("TKN", "TKN");
+        presale.addPaymentToken(address(token));
+        assertEq(presale.paymentTokens(token), true);
+        vm.expectEmit(true, true, true, true);
+        emit Presale.RemovePaymentToken(address(token));
+        presale.removePaymentToken(address(token));
+        assertEq(presale.paymentTokens(token), false);
+    }
+
+    function test_RemovePaymentToken_RevertWhen_notAdmin(address notOwner) public {
+        Token token = new Token("TKN", "TKN");
+        presale.addPaymentToken(address(token));
+        vm.assume(notOwner != address(this));
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
+        presale.removePaymentToken(address(token));
+    }
 
     function test_SetRound() public {
         vm.expectEmit(true, true, true, true);
