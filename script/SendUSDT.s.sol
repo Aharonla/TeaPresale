@@ -10,7 +10,7 @@ contract SendUSDT is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        address usdtAddress = vm.envAddress("USDT_ADDRESS");
+        address usdtAddress = vm.envAddress("TESTNET_USDT_ADDRESS");
         usdt = ERC20(usdtAddress);
         address developer = vm.envAddress("DEVELOPER");
         /// @notice Set round 1 with 1 million tokens, 0.07 eth per token, and 3 days duration
