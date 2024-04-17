@@ -27,7 +27,7 @@ contract PresaleTest is Test {
         usdc = new Token("USDC", "USDC");
         tokens[0] = address(usdt);
         tokens[1] = address(usdc);
-        presale = new Presale(tokens);
+        presale = new Presale(address(this), tokens);
     }
 
     function test_constructor() public {

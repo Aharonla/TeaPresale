@@ -14,13 +14,14 @@ contract Token is ERC20 {
 contract PresaleScript is Script {
     function run() external returns(address presaleAddress, address usdtAddress, address usdcAddress) {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address ownerAddress = vm.envAddress("TESTNET_OWNER_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
         Token usdt = new Token("USDT", "USDT");
         Token usdc = new Token("USDC", "USDC");
         address[] memory tokens = new address[](2);
         tokens[0] = address(usdt);
         tokens[1] = address(usdc);
-        Presale presale = new Presale(tokens);
+        Presale presale = new Presale(ownerAddress, tokens);
 
         vm.stopBroadcast();
         console2.log(address(presale));

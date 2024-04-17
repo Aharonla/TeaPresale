@@ -70,7 +70,7 @@ contract Presale is ERC20, Ownable, Pausable {
 
     /// @notice Constructor
     /// @param _paymentTokens List of payment tokens
-    constructor(address[] memory _paymentTokens) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
+    constructor(address _owner, address[] memory _paymentTokens) Ownable(_owner) ERC20("TEAPresale", "TPS") {
         for(uint256 i = 0; i < _paymentTokens.length; i++) {
             if (_paymentTokens[i] == address(0)) {
                 revert PaymentTokenNotAuthorized(_paymentTokens[i]);
