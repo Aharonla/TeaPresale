@@ -33,7 +33,9 @@ contract Presale is ERC20, Ownable, Pausable {
 
     /// @notice Percentage rate: 100% = 10000 for 2 decimal places
     uint256 public constant PERCENTAGE_RATE = 10000;
+    /// @notice Current round index
     uint8 public currentRound;
+    /// @notice Total amount of tokens sold at all rounds
     uint256 public totalSold;
 
     /// @notice Mapping of round number to round parameters
@@ -43,13 +45,20 @@ contract Presale is ERC20, Ownable, Pausable {
     /// @notice Mapping of payment tokens to their status
     mapping(address token => bool allowed) public paymentTokens;
 
+    /// @notice Event emitted when a round is set
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
+    /// @notice Event emitted when a round is started
     event RoundStarted(uint8 indexed round);
+    /// @notice Event emitted when tokens are bought
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
+    /// @notice Event emitted when tokens are withdrawn
     event Withdraw(address indexed owner, address token, uint256 amount);
+    /// @notice Event emitted when a payment token is added
     event AddPaymentToken(address indexed token);
+    /// @notice Event emitted when a payment token is removed
     event RemovePaymentToken(address indexed token);
 
+    /// @notice Errors
     error RoundAlreadyExists(uint8 round);
     error RoundAlreadyStarted(uint8 round);
     error PreviousRoundActive(uint8 round);
@@ -77,7 +86,7 @@ contract Presale is ERC20, Ownable, Pausable {
             if (_paymentTokens[i] == address(0)) {
                 revert PaymentTokenNotAuthorized(_paymentTokens[i]);
             }
-            paymentTokens[ERC20(_paymentTokens[i])] = true;
+            paymentTokens[_paymentTokens[i]] = true;
             emit AddPaymentToken(_paymentTokens[i]);
         }
     }
