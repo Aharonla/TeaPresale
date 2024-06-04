@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.23;
 
 import {Script, console2} from "forge-std/Script.sol";
 import { Presale } from "../src/Presale.sol";
@@ -10,7 +10,7 @@ contract SendUSDC is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        address usdcAddress = vm.envAddress("USDC_ADDRESS");
+        address usdcAddress = vm.envAddress("TESTNET_USDC_ADDRESS");
         usdt = ERC20(usdcAddress);
         address developer = vm.envAddress("DEVELOPER");
         /// @notice Set round 1 with 1 million tokens, 0.07 eth per token, and 3 days duration

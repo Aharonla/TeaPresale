@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Presale is ERC20, Ownable, Pausable {
+    using SafeERC20 for ERC20;
 
     /// @notice Round parameters
     /// @param startTime Start time of the round
@@ -31,26 +33,32 @@ contract Presale is ERC20, Ownable, Pausable {
 
     /// @notice Percentage rate: 100% = 10000 for 2 decimal places
     uint256 public constant PERCENTAGE_RATE = 10000;
+    /// @notice Current round index
     uint8 public currentRound;
+    /// @notice Total amount of tokens sold at all rounds
     uint256 public totalSold;
-    uint256 public totalClaimed;
-    address public claimer;
 
     /// @notice Mapping of round number to round parameters
     mapping(uint8 roundId => Round round) public rounds;
     /// @notice Mapping of referral code to referral parameters
     mapping(uint8 referralId  => Referral referral) public referrals;
     /// @notice Mapping of payment tokens to their status
-    mapping(ERC20 token => bool allowed) public paymentTokens;
+    mapping(address token => bool allowed) public paymentTokens;
 
+    /// @notice Event emitted when a round is set
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
+    /// @notice Event emitted when a round is started
     event RoundStarted(uint8 indexed round);
+    /// @notice Event emitted when tokens are bought
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
-    event Withdraw(address indexed owner, uint256 amount);
+    /// @notice Event emitted when tokens are withdrawn
+    event Withdraw(address indexed owner, address token, uint256 amount);
+    /// @notice Event emitted when a payment token is added
     event AddPaymentToken(address indexed token);
+    /// @notice Event emitted when a payment token is removed
     event RemovePaymentToken(address indexed token);
-    event ClaimerSet(address indexed claimer);
 
+    /// @notice Errors
     error RoundAlreadyExists(uint8 round);
     error RoundAlreadyStarted(uint8 round);
     error PreviousRoundActive(uint8 round);
@@ -60,8 +68,6 @@ contract Presale is ERC20, Ownable, Pausable {
     error NotEnoughTokensLeft(uint8 round, uint256 amount, uint256 available);
     error PaymentFailed(address from, address to, uint256 amount);
     error PaymentTokenNotAuthorized(address token);
-    error NotClaimer();
-    error claimerAddressIsZero();
     error WithdrawFailed();
     
     modifier roundIsActive() {
@@ -73,19 +79,14 @@ contract Presale is ERC20, Ownable, Pausable {
         }
         _;}
 
-    modifier onlyClaimer() {
-        if(_msgSender() != claimer) {
-            revert NotClaimer();
-        } 
-        _;
-    }
-
-
     /// @notice Constructor
     /// @param _paymentTokens List of payment tokens
-    constructor(address[] memory _paymentTokens) Ownable(_msgSender()) ERC20("TEAPresale", "TPS") {
+    constructor(address _owner, address[] memory _paymentTokens) Ownable(_owner) ERC20("TEAPresale", "TPS") {
         for(uint256 i = 0; i < _paymentTokens.length; i++) {
-            paymentTokens[ERC20(_paymentTokens[i])] = true;
+            if (_paymentTokens[i] == address(0)) {
+                revert PaymentTokenNotAuthorized(_paymentTokens[i]);
+            }
+            paymentTokens[_paymentTokens[i]] = true;
             emit AddPaymentToken(_paymentTokens[i]);
         }
     }
@@ -120,27 +121,17 @@ contract Presale is ERC20, Ownable, Pausable {
         _unpause();
     }
 
-    /// @notice Sets the address of the claimer
-    /// @param claimerAddress Address of the claimer
-    function setClaimer(address claimerAddress) public onlyOwner {
-        if(claimerAddress == address(0)) {
-            revert claimerAddressIsZero();
-        }
-        claimer = claimerAddress;
-        emit ClaimerSet(claimerAddress);
-    }
-
     /// @notice Adds a token to the list of payment tokens
     /// @param token Address of the token to add
     function addPaymentToken(address token) public onlyOwner {
-        paymentTokens[ERC20(token)] = true;
+        paymentTokens[token] = true;
         emit AddPaymentToken(token);
     }
 
     /// @notice Removes a token from the list of payment tokens
     /// @param token Address of the token to remove
     function removePaymentToken(address token) public onlyOwner {
-        paymentTokens[ERC20(token)] = false;
+        paymentTokens[token] = false;
         emit RemovePaymentToken(token);
     }
 
@@ -225,8 +216,7 @@ contract Presale is ERC20, Ownable, Pausable {
         if (rounds[currentRound].sold + amount > rounds[currentRound].size) {
             revert NotEnoughTokensLeft(currentRound, amount, rounds[currentRound].size - rounds[currentRound].sold);
         }
-        ERC20 paymentToken = ERC20(tokenAddress);
-        if(!paymentTokens[paymentToken]) {
+        if(!paymentTokens[tokenAddress]) {
             revert PaymentTokenNotAuthorized(tokenAddress);
         }
         uint256 paymentAmount = amount * rounds[currentRound].price / PERCENTAGE_RATE;
@@ -236,26 +226,13 @@ contract Presale is ERC20, Ownable, Pausable {
         referrals[referral].numOfReferrals++;
         _mint(_msgSender(), amount);
         emit BuyTokens(_msgSender(), amount, referral);
-        bool success = paymentToken.transferFrom(msg.sender, address(this), paymentAmount);
-        if(!success) {
-            revert PaymentFailed(_msgSender(), address(this), paymentAmount);
-        }
+        ERC20(tokenAddress).safeTransferFrom(msg.sender, address(this), paymentAmount);
     }
 
     /// @notice Withdraws the balance of the contract
     /// @param paymentToken Address of the token to withdraw
     function withdraw(address paymentToken) public onlyOwner {
-        emit Withdraw(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
-        bool success = ERC20(paymentToken).transfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
-        if(!success) {
-            revert WithdrawFailed();
-        }
-    }
-
-    /// @notice Used to burn tokens once the amount is claimed
-    function burnClaimed() public onlyClaimer returns (bool) {
-        _burn(_msgSender(), balanceOf(_msgSender()));
-        totalClaimed += balanceOf(_msgSender());
-        return true;
+        emit Withdraw(_msgSender(), paymentToken, ERC20(paymentToken).balanceOf(address(this)));
+        ERC20(paymentToken).safeTransfer(_msgSender(), ERC20(paymentToken).balanceOf(address(this)));
     }
 }
