@@ -46,7 +46,7 @@ contract Presale is ERC20, Ownable, Pausable {
     event SetRound(uint8 indexed round, uint256 startTime, uint256 duration, uint256 size, uint256 price);
     event RoundStarted(uint8 indexed round);
     event BuyTokens(address indexed buyer, uint256 amount, uint8 referral);
-    event Withdraw(address indexed owner, uint256 amount);
+    event Withdraw(address indexed owner, address token, uint256 amount);
     event AddPaymentToken(address indexed token);
     event RemovePaymentToken(address indexed token);
 
