@@ -22,8 +22,8 @@
   verbosity = 4
 
 [etherscan]
-  # mainnet = { key = "${API_KEY_ETHERSCAN}" }
-  sepolia = { key = "${API_KEY_ETHERSCAN}" }
+  mainnet = { key = "${API_KEY_ETHERSCAN}" }
+  # sepolia = { key = "${API_KEY_ETHERSCAN}" }
 
 [fmt]
   bracket_spacing = true
@@ -36,5 +36,5 @@
   wrap_comments = true
 
 [rpc_endpoints]
-  # mainnet = "https://eth-mainnet.g.alchemy.com/v2/${API_KEY_ALCHEMY_MAINNET}"
-  sepolia = "https://eth-sepolia.g.alchemy.com/v2/${API_KEY_ALCHEMY_SEPOLIA}"
+  mainnet = "https://mainnet.infura.io/v3/${API_KEY_INFURA_MAINNET}"
+  # sepolia = "https://eth-sepolia.g.alchemy.com/v2/${API_KEY_ALCHEMY_SEPOLIA}"
